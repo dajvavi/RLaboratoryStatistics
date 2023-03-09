@@ -1,0 +1,211 @@
+---
+output:
+  word_document:
+    reference_docx: plantilla.docx
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, message=FALSE,include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+```{r export, echo=FALSE, message=FALSE, results='asis',tidy=FALSE}
+
+library(knitr)
+library(dplyr)
+library(readxl)
+library(flextable)
+
+
+
+
+export_criteres <- read_excel("export_criteres.xlsx", sheet = "export_criteres", skip = 3)
+colnames(export_criteres)[5]<-"Parámetro"
+colnames(export_criteres)[6]<-"Código"
+colnames(export_criteres)[7]<-"Unidad"
+theme_myzebra <- function(x, odd_header = "#B7DAF9", odd_body = "#E2EEF9",
+                        even_header = "#B7DAF9", even_body = "transparent") {
+  if (!inherits(x, "flextable")) {
+    stop("theme_zebra supports only flextable objects.")
+  }
+
+  h_nrow <- nrow_part(x, "header")
+  f_nrow <- nrow_part(x, "footer")
+  b_nrow <- nrow_part(x, "body")
+
+  x <- border_remove(x)
+  x <- align(x = x, align = "center", part = "header")
+  x<-fontsize(x, i = NULL, j = NULL, size = 8, part = "body")
+  x<-fontsize(x, i = NULL, j = NULL, size = 8, part = "header")
+  
+  if (h_nrow > 0) {
+    even <- seq_len(h_nrow) %% 2 == 0
+    odd <- !even
+
+    x <- bg(x = x, i = odd, bg = odd_header, part = "header")
+    x <- bg(x = x, i = even, bg = even_header, part = "header")
+    x <- bold(x = x, bold = TRUE, part = "header")
+  }
+  if (f_nrow > 0) {
+    even <- seq_len(f_nrow) %% 2 == 0
+    odd <- !even
+
+    x <- bg(x = x, i = odd, bg = odd_header, part = "footer")
+    x <- bg(x = x, i = even, bg = even_header, part = "footer")
+    x <- bold(x = x, bold = TRUE, part = "footer")
+  }
+  if (b_nrow > 0) {
+    even <- seq_len(b_nrow) %% 2 == 0
+    odd <- !even
+
+    x <- bg(x = x, i = odd, bg = odd_body, part = "body")
+    x <- bg(x = x, i = even, bg = even_body, part = "body")
+  }
+  x <- align_text_col(x, align = "center", header = TRUE)
+  x <- align_nottext_col(x, align = "center", header = TRUE)
+
+  fix_border_issues(x)
+}
+
+
+
+for (i in 1:nrow(export_criteres)) {
+  
+  if (!is.na(export_criteres[i,18])){
+    
+titulo<-flextable(export_criteres[i,c(5,6)])
+titulo<-delete_part(titulo, part = "header")
+titulo<-color(titulo,color="#3DA1F8")
+titulo<-width(titulo, j = 1, 5)
+titulo<-width(titulo, j = 2, 1.954)
+titulo<-fontsize(titulo, i = NULL, j = NULL, size = 18, part = "body")
+titulo<-bold(titulo, i = NULL, j = NULL, bold = TRUE, part = "body")
+
+cat(knit_print(titulo))
+    
+     
+ft<-flextable(export_criteres[i,c(5,7,6,18,8,9,10,11,15,14,19)])
+ft <- theme_myzebra(ft)
+ft<-width(ft, j = NULL, 0.5454)
+#ft<-ft %>% autofit() %>% fit_to_width(8)
+ft<-width(ft,j=1,1.5)
+ft <- add_footer_lines(ft, values="x=valor del laboratorio, xpt=valor asignado, u(xpt)=incertidumbre xpt, s(xpt)= desviación estándar robusta de los resultados, p(xpt)= número de resultados, Min= tolerancia inferior, Max=tolerancia superior, z-score= z-score." )
+ft<-fontsize(ft, i = NULL, j = NULL, size = 5, part = "footer")
+
+
+
+cat(knit_print(ft))
+    
+    
+    
+    
+    
+    
+    cat("  \n")  
+    
+    
+    if (is.na(export_criteres[i,19])){
+  ft2<-data.frame("Resultado"="El resultado es menor al límite de detección")
+ft2<-flextable(ft2)
+ft2<-delete_part(ft2, part = "header")
+ft2<-width(ft2, j = 1, 6.954)
+ft2<-fontsize(ft2, i = NULL, j = NULL, size = 12, part = "body")
+
+
+cat(knit_print(ft2))
+cat(".")
+      
+
+} else{
+  if(abs(export_criteres[i,19])<=2) {
+  
+ft2<-data.frame("Resultado"="El resultado es","CORRECTO"="CORRECTO")
+ft2<-flextable(ft2)
+ft2<-delete_part(ft2, part = "header")
+ft2<-color(ft2,j=2,color="#2DBD27")
+ft2<-width(ft2, j = 1, 1.3)
+ft2<-width(ft2, j = 2, 5.654)
+ft2<-fontsize(ft2, i = NULL, j = NULL, size = 12, part = "body")
+
+
+cat(knit_print(ft2))
+cat(".")
+
+
+ } else{
+  if(abs(export_criteres[i,19])>2 & abs(export_criteres[i,19])<=3){
+    ft2<-data.frame("Resultado"="El resultado es","CUESTIONABLE"="CUESTIONABLE")
+ft2<-flextable(ft2)
+ft2<-delete_part(ft2, part = "header")
+ft2<-color(ft2,j=2,color="#FF8D33")
+ft2<-width(ft2, j = 1, 1.3)
+ft2<-width(ft2, j = 2, 5.654)
+ft2<-fontsize(ft2, i = NULL, j = NULL, size = 12, part = "body")
+
+
+cat(knit_print(ft2))
+cat(".")
+
+   }else{
+ft2<-data.frame("Resultado"="El resultado es","ERRONEO"="ERRONEO")
+ft2<-flextable(ft2)
+ft2<-delete_part(ft2, part = "header")
+ft2<-color(ft2,j=2,color="#EF3C30")
+ft2<-width(ft2, j = 1, 1.3)
+ft2<-width(ft2, j = 2, 5.654)
+ft2<-fontsize(ft2, i = NULL, j = NULL, size = 12, part = "body")
+
+
+cat(knit_print(ft2))
+cat(".")
+ 
+  }
+ }
+}
+    
+    
+    
+    
+    
+    
+    
+    
+}
+}
+
+
+```
+
+
+
+
+
+
+
+<br>
+
+## Informe generado automáticamente utilizando el software RStudio, el archivo de R Markdown BIPEA-AUTOMATICO.Rmd y el archivo de datos obtenido de www.BIPEA.org export_criteres.xlsx del mes correspondiente.
+
+<br>
+
+## Programado por David V.
+
+<br>
+
+### REVISADO
+
+<br>
+
+<br>
+
+<br>
+
+<br>
+
+
+```{r fecha, echo=FALSE, message=FALSE, results='asis'}
+cat(format(Sys.Date(), "%d de %B de %Y"))
+```

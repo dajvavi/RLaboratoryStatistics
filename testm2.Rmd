@@ -1,0 +1,75 @@
+
+---
+title: "Estudio del patrón de suelos PSI"
+output:
+  word_document:
+    reference_docx: template.docx
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## CALCULOS ESTADÍSTICOS
+
+Se realizan los cálculos siguiendo el manual "Guidelines for quality management in soil and plant laboratories" (FAO, soils bulletin 74 pag:132 ISBN: 92-5-104065-6, 1998) adaptado de Massart et tal. 1988.Se eliminan automaticamente los valores superiores e inferiores a 2 desviaciones estandar.
+
+```{r, echo=FALSE}
+source('testmSIN2S.R')
+library(readxl)
+library(dplyr)
+nuevo <- read_excel("nuevo.xlsx")
+antiguo <- read_excel("antiguo.xlsx")
+
+testotal(antiguo,nuevo)
+```
+
+## GRÁFICOS
+
+Gráficos Boxplot e Histograma para cada método:
+
+```{r pressure, echo=FALSE}
+
+
+  for (i in 1:ncol(nuevo)){
+  # Si el número de datos a comparar proviene de un número mayor o igual a 30 en ambos casos entonces
+  datos=nuevo
+  datos2=filter(datos,abs(datos[[i]])<mean(na.exclude(datos[[i]]))+2*sd(na.exclude(datos[[i]])) & abs(datos[[i]])>mean(na.exclude(datos[[i]]))-2*sd(na.exclude(datos[[i]])))
+
+    boxplot(datos2[[i]],main=paste("Boxplot de",colnames(datos2[i])),xlab = colnames(datos2[i]))
+  hist(datos2[[i]],main=paste("Histograma de",colnames(datos2[i])),xlab = colnames(datos2[i]))
+  }
+
+```
+
+
+## TABLAS DE DATOS
+
+### Datos de referencia
+
+
+
+```{r tabla1, echo=FALSE,results='asis'}
+
+  library(knitr)
+  
+  kable(antiguo[])
+
+```
+
+
+### Datos utilizados en los cálculos
+
+
+
+```{r tabla2, echo=FALSE,results='asis'}
+ 
+  
+  nuevo[is.na(nuevo)]=""
+  kable((nuevo[]))
+
+```
+
+
+Cálculos realizados en el software r utilizando la función del LAFIGA testm y los data.frames nuevo (conjunto de  nuevos datos para cada uno de los métodos de análisis que se quieren comparar con el valor de referencia)  y antiguo (incluye las medias, desviaciones estandar, numero de valores y año de los valores de referencia utilizados)

@@ -1,0 +1,231 @@
+---
+output:
+  word_document:
+    reference_docx: plantilla.docx
+
+
+---
+
+```{r setup, message=FALSE,include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+```{r export, echo=FALSE, message=FALSE, results='asis',include=FALSE}
+
+library(knitr)
+library(dplyr)
+library(readr)
+library(flextable)
+
+
+csv <- read_csv("csvplantas.csv", locale = locale(encoding = "ISO-8859-1"), skip = 3)
+
+#El código siguiente es para usar solo red (base), eliminando las primeras 4 filas, cambiando el título y convertir
+#la columna de Z-scores en numero. Es más código pero tenía problemas con la codificación del carácter u de um/kg
+#csv <- read.csv("C:/Users/MCPC-X/Desktop/pruebarmarkdown/WEPAL/csv.csv", header=FALSE)1
+#names(csv) <- as.matrix(csv[4, ])
+#csv <- csv[-c(1,2,3,4), ]
+#csv<-transform(csv, Zscore = as.numeric(Zscore))
+
+
+
+
+theme_mizebra <- function(x, odd_header = "#BFD7F9", odd_body = "#E1ECFB",
+                        even_header = "transparent", even_body = "transparent") {
+  if (!inherits(x, "flextable")) {
+    stop("theme_zebra supports only flextable objects.")
+  }
+
+  h_nrow <- nrow_part(x, "header")
+  f_nrow <- nrow_part(x, "footer")
+  b_nrow <- nrow_part(x, "body")
+
+  x <- border_remove(x)
+  x <- align(x = x, align = "center", part = "header")
+
+  if (h_nrow > 0) {
+    even <- seq_len(h_nrow) %% 2 == 0
+    odd <- !even
+
+    x <- bg(x = x, i = odd, bg = odd_header, part = "header")
+    x <- bg(x = x, i = even, bg = even_header, part = "header")
+    x <- bold(x = x, bold = TRUE, part = "header")
+  }
+  if (f_nrow > 0) {
+    even <- seq_len(f_nrow) %% 2 == 0
+    odd <- !even
+
+    x <- bg(x = x, i = odd, bg = odd_header, part = "footer")
+    x <- bg(x = x, i = even, bg = even_header, part = "footer")
+    x <- bold(x = x, bold = TRUE, part = "footer")
+  }
+  if (b_nrow > 0) {
+    even <- seq_len(b_nrow) %% 2 == 0
+    odd <- !even
+
+    x <- bg(x = x, i = odd, bg = odd_body, part = "body")
+    x <- bg(x = x, i = even, bg = even_body, part = "body")
+  }
+  x <- align_text_col(x, align = "left", header = TRUE)
+  x <- align_nottext_col(x, align = "right", header = TRUE)
+
+  fix_border_issues(x)
+}
+
+```
+
+
+```{r pH, echo=FALSE, message=FALSE, results='asis'}
+
+planta1<-c(0)
+planta2<-c(0)
+
+#Para cada elemento no repetido de la columna ElemNr del csv
+for (j in (csv[!duplicated(csv$ElemNr), ])$ElemNr) {
+  
+#Creamos un nuevo data_frame solo con las columnas que queremos para cada ElemNr
+ph_h20<-subset(csv[,c(4,5,7,8,9,10,13,14,17,11)], csv$ElemNr==j)
+
+#Evaluamos la Z-score y creamos una nueva columna evaluacion donde indicamos el resultado de la evaluación
+evaluacion<-c(1:nrow(ph_h20))
+ph_h20<-cbind(ph_h20,evaluacion)
+
+for (i in 1:nrow(ph_h20)) {
+  if(is.numeric(ph_h20[i,10]) & !is.na(ph_h20[i,10])){
+
+    if (abs(ph_h20[i,10])<=2){
+    ph_h20[i,11]="CORRECTO"
+  } else{
+    if (abs(ph_h20[i,10])>3){
+    
+    ph_h20[i,11]="ERRONEO"
+    }else{
+      
+      ph_h20[i,11]="CUESTIONABLE"
+    }
+  }
+}
+}   
+
+#Imprimimos el título de la tabla con el nombre del método
+titulo<-ph_h20[1,3]
+titulo<-as.data.frame(titulo)
+titulo<-flextable(titulo)
+titulo<-delete_part(titulo, part = "header")
+titulo<-theme_vanilla(titulo)
+titulo<-width(titulo, j = NULL, 5)
+titulo<-fontsize(titulo, i = NULL, j = NULL, size = 18, part = "body")
+titulo<-color(titulo, i = NULL, j = NULL, color="#BFD7F9", part = "body")
+titulo<-bold(titulo, i = NULL, j = NULL, bold = TRUE, part = "body")
+titulo<-bg(titulo, i = NULL, j = NULL, bg="transparent", part = "body")
+cat(knit_print(titulo))
+  
+#Imprimimos la tabla con todos los datos
+ft<-flextable(ph_h20[order(ph_h20$Sample),])
+ft<-theme_mizebra(ft)
+ft<-fontsize(ft, i = NULL, j = NULL, size = 8, part = "body")
+ft<-fontsize(ft, i = NULL, j = NULL, size = 8, part = "head")
+ft<-ft %>% autofit() %>% fit_to_width(7.5)
+#ft<-autofit(ft, add_w = 0.1, add_h = 0.1, part = c("body", "header"))
+#ft<-width(ft, j = 1, 0.59)
+#ft<-width(ft, j = 2, 0.6574)
+#ft<-width(ft, j = 3, 1.1457)
+#ft<-width(ft, j = 4, 0.44)
+#ft<-width(ft, j = 5, 0.5394)
+#ft<-width(ft, j = 6, 0.4881)
+#ft<-width(ft, j = 7, 0.68)
+#ft<-width(ft, j = 8, 0.65)
+#ft<-width(ft, j = 9, 0.2677)
+#ft<-width(ft, j = 10, 0.5276)
+#ft<-width(ft, j = 11, 0.7914)
+ft<-align(ft, i = NULL, j = NULL, align = "center", part = "body")
+ft<-align(ft, i = NULL, j = NULL, align = "center", part = "header")
+for (k in 1:nrow(ph_h20)) {
+  
+if(toString((ph_h20[order(ph_h20$Sample),][k,11]))=="CORRECTO"){
+ft<-color(ft,i=k, j=11,color="#2DBD27")
+}else{
+  if(toString((ph_h20[order(ph_h20$Sample),][k,11]))=="CUESTIONABLE"){
+    ft<-color(ft,i=k, j=11,color="#FF8D33")
+  }else{
+    if(toString((ph_h20[order(ph_h20$Sample),][k,11]))=="ERRONEO"){
+     ft<-color(ft,i=k, j=11,color="#EF3C30") 
+    }
+  }
+}
+}
+cat(knit_print(ft))
+
+#contamos si hay algún error en alguna muestra e imprimimos el resultado
+contadora<-c(0)
+for (i in 1:nrow(ph_h20)) {
+  if(is.numeric(ph_h20[i,10]) & !is.na(ph_h20[i,10])){
+    if (abs(ph_h20[i,10])<=2){
+
+  }else{
+    if(abs(ph_h20[i,10])>3){
+    planta1<-planta1+1
+    contadora<-contadora+1
+    }else{
+      planta2<-planta2+1
+      contadora<-contadora+1
+    }
+  }
+  }
+}
+if(contadora>0){
+  cat("Hay" ,contadora , "datos CUESTIONABLES/ERRONEOS en las muestras ")
+}else{
+  cat("Todas las muestras son CORRECTAS")
+}
+
+
+
+}
+
+
+ft3<-flextable(as.data.frame(c("ESTUDIO DE RESULTADOS GLOBALES")))
+ft3<-ft3 %>% autofit() %>% fit_to_width(7.5)
+ft3<-bold(ft3, i = NULL, j = NULL, bold = TRUE, part = "body")
+ft3<-delete_part(ft3, part = "header")
+cat(knit_print(ft3))
+
+tablatotal <- data.frame(
+  "Valor" = c("Número total de análisis","Número total de anáisis con un *","Número total de análisis con dos **","Número total de análisis con un/dos */**"), 
+  "Número" = c(nrow(csv),planta2,planta1,planta1+planta2), 
+  "Porcentaje" = c(100,round(((planta2*100)/nrow(csv)),0),round(((planta1*100)/nrow(csv)),0),round((((planta2+planta1)*100)/nrow(csv)),0))
+  )
+
+
+ft2<-flextable(tablatotal)
+ft2<-ft2 %>% autofit() %>% fit_to_width(7.5)
+cat(knit_print(ft2))
+
+```
+
+<br>
+
+## Informe generado automáticamente utilizando el software RStudio, el archivo de R Markdown WEPAL_AUTOMATICO_PLANTAS.Rmd y el archivo de datos obtenido de www.wepal.nl AÑO-PERIODO-IPE-XGCALAFIGA.csv del trimestre correspondiente.
+
+<br>
+
+## Programado por David V.
+
+<br>
+
+
+### REVISADO
+
+<br>
+
+<br>
+
+<br>
+
+<br>
+
+
+```{r fecha, echo=FALSE, message=FALSE, results='asis'}
+cat(format(Sys.Date(), "%d de %B de %Y"))
+```

@@ -1,0 +1,111 @@
+
+---
+title: "Estudio del patrón de suelos PSI"
+output:
+  word_document:
+    reference_docx: template.docx
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## CALCULOS ESTADÍSTICOS
+
+Se realizan los cálculos siguiendo el manual "Guidelines for quality management in soil and plant laboratories" (FAO, soils bulletin 74 pag:132 ISBN: 92-5-104065-6, 1998) adaptado de Massart et tal. 1988.Se eliminan automaticamente los outliers.
+
+```{r, echo=FALSE,message=FALSE}
+source('testmSINOutliers.R')
+library(readxl)
+library(dplyr)
+nuevo <- read_excel("nuevo.xlsx")
+antiguo <- read_excel("antiguo.xlsx")
+
+testotal(antiguo,nuevo)
+```
+
+## GRÁFICOS
+
+Gráficos Boxplot e Histograma para cada método:
+
+```{r pressure, results='asis',echo=FALSE}
+
+
+  for (i in 1:ncol(nuevo)){
+  # Si el número de datos a comparar proviene de un número mayor o igual a 30 en ambos casos entonces
+  datos=nuevo
+  if(length(boxplot(datos[[i]], plot=FALSE)$out)==0){
+    datos2=datos
+  }else{
+    outliers=boxplot(datos[[i]], plot=FALSE)$out
+    datos2=datos[-which(datos[[i]] %in% outliers),]
+  }
+
+    boxplot(datos2[[i]],main=paste("Boxplot de",colnames(datos2[i])),xlab = colnames(datos2[i]))
+  hist(datos2[[i]],main=paste("Histograma de",colnames(datos2[i])),xlab = colnames(datos2[i]),prob=TRUE)
+  lines(density(na.exclude(datos2[[i]])), lwd = 1,  col = "cornflowerblue")
+  }
+
+```
+
+
+## TABLAS DE DATOS
+
+### Datos eliminados de los cálculos por ser outliers
+
+```{r pressure2, results='asis',echo=FALSE}
+
+
+  for(i in 1:ncol(nuevo)){
+  datos=nuevo
+  tablaoutliers=data.frame(boxplot(datos[[i]], plot=FALSE)$out)
+  colnames(tablaoutliers)=names(datos[i])
+  
+  assign(paste("tabla",i,sep = ""), tablaoutliers)
+  
+  if (i==1){
+    final=tablaoutliers
+  }else{
+  
+  final=merge(data.frame(final, row.names=NULL), data.frame(get(paste("tabla",i,sep = "")), row.names=NULL), by = 0, all = TRUE)[-1]
+  }
+  }
+
+library(knitr)
+final[is.na(final)]=""
+kable(final[])
+
+```
+
+
+### Datos de referencia
+
+
+
+```{r tabla1, echo=FALSE,results='asis',message=FALSE}
+
+  library(knitr)
+ 
+
+  
+  kable(antiguo[]) 
+  
+```
+
+
+### Datos originales utilizados en los cálculos
+
+
+
+```{r tabla2, echo=FALSE,results='asis',message=FALSE}
+ 
+  
+  nuevo[is.na(nuevo)]=""
+  knitr::kable((nuevo[])) 
+```
+
+
+Cálculos realizados en el software r utilizando la función del LAFIGA testm y los data.frames nuevo (conjunto de  nuevos datos para cada uno de los métodos de análisis que se quieren comparar con el valor de referencia)  y antiguo (incluye las medias, desviaciones estandar, numero de valores y año de los valores de referencia utilizados)
